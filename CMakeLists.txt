@@ -12,3 +12,13 @@ add_executable(highperfbox
 target_include_directories(highperfbox
     PUBLIC ${PROJECT_SOURCE_DIR}/include
 )
+
+target_compile_options(highperfbox PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(highperfbox PRIVATE -O3)
+endif()
