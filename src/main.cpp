@@ -1,8 +1,8 @@
-#include<iostream>
+#include"hp/core/app.hpp"
 
 int main()
 {
-    int x;
-    std::cout<<"HighPerfBox booted"<<std::endl;
+    hp::core::App app;
+    app.run();
     return 0;
 }
