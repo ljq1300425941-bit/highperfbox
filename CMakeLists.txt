@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(highperfbox
     src/main.cpp
     src/core/app.cpp
+    src/log/logger.cpp
+    src/log/console_sink.cpp
 )
 
 target_include_directories(highperfbox
