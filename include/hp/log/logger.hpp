@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <atomic>
 
 namespace hp::log {
 
@@ -26,7 +27,7 @@ private:
 
 private:
     ILogSink& sink_;
-    Level level_{Level::Info};
+    std::atomic<Level> level_{Level::Info};
     std::mutex mu_;
 };
 

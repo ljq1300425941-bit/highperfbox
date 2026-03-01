@@ -5,6 +5,7 @@
 #include <sstream>
 #include <thread>
 
+
 namespace hp::log {
 
 const char* to_string(Level lv) {
@@ -22,14 +23,20 @@ const char* to_string(Level lv) {
 Logger::Logger(ILogSink& sink) : sink_(sink) {}
 
 void Logger::set_level(Level lv) {
-    std::lock_guard<std::mutex> lk(mu_);
-    level_ = lv;
+    level_.store(lv);
 }
 
 void Logger::log(Level lv, std::string_view msg) {
-    std::lock_guard<std::mutex> lk(mu_);
-    if (static_cast<int>(lv) < static_cast<int>(level_)) return;
-    sink_.write(format(lv, msg));
+    
+
+        if (static_cast<int>(lv) < static_cast<int>(level_.load())) return;
+
+    std::string line = format(lv,msg);
+
+    {
+        std::lock_guard<std::mutex> lk(mu_);
+        sink_.write(line);
+    }
 }
 
 std::string Logger::format(Level lv, std::string_view msg) {
