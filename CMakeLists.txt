@@ -10,6 +10,13 @@ add_executable(highperfbox
     src/core/app.cpp
     src/log/logger.cpp
     src/log/console_sink.cpp
+    src/config/config.cpp
+)
+
+configure_file(
+    ${PROJECT_SOURCE_DIR}/config.ini
+    ${CMAKE_CURRENT_BINARY_DIR}/config.ini
+    COPYONLY
 )
 
 target_include_directories(highperfbox

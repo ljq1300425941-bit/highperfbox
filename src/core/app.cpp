@@ -1,18 +1,21 @@
 #include "hp/core/app.hpp"
 #include "hp/log/logger.hpp"
 #include "hp/log/console_sink.hpp"
+#include "hp/config/config.hpp"
 #include <iostream>
 
 namespace hp::core{
 
 void App::run()
 {
-    hp::log::ConsoleSink sink;
-    hp::log::Logger logger(sink);
+    hp::config::Config cfg;
+    if (!cfg.load("config.ini")) {
+        std::cout << "Failed to load config\n";
+        return;
+    }
 
-    logger.info("HighPerfBox core running.");
-    logger.warn("This is a warning example.");
-    logger.error("This is an error example.");
+    std::cout << "cache_size = " << cfg.get_int("cache_size") << "\n";
+    std::cout << "threads = " << cfg.get_int("threads") << "\n";
 }    
 
 }
