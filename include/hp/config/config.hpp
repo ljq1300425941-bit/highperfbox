@@ -8,7 +8,8 @@ class Config {
 public:
     bool load(const std::string& filename);
 
-    std::string get_string(const std::string& key) const;
+    bool has(const std::string &key) const;
+    std::string get_string(const std::string &key) const;
     int get_int(const std::string& key) const;
 
 private:

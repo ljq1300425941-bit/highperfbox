@@ -14,8 +14,16 @@ void App::run()
         return;
     }
 
-    std::cout << "cache_size = " << cfg.get_int("cache_size") << "\n";
-    std::cout << "threads = " << cfg.get_int("threads") << "\n";
+    hp::log::ConsoleSink sink;
+    hp::log::Logger logger(sink);
+
+    logger.info("Config loaded.");
+
+    int threads = cfg.get_int("threads");
+    int cache_size = cfg.get_int("cache_size");
+
+    logger.info(("threads=" + std::to_string(threads)).c_str());
+    logger.info(("cache_size=" + std::to_string(cache_size)).c_str());
 }    
 
 }
