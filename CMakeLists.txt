@@ -4,6 +4,8 @@ project(highperfbox)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 
 add_executable(highperfbox
     src/main.cpp
@@ -28,6 +30,13 @@ target_compile_options(highperfbox PRIVATE
     -Wextra
     -Wpedantic
 )
+
+add_subdirectory(third_party/benchmark)
+
+enable_testing()
+
+add_executable(bench_vector benchmark/bm_vector.cpp)
+target_link_libraries(bench_vector benchmark::benchmark)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(highperfbox PRIVATE -O3)
