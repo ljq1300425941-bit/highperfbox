@@ -41,6 +41,12 @@ target_link_libraries(bench_vector benchmark::benchmark)
 add_executable(bench_map_insert benchmark/bm_map_insert.cpp)
 target_link_libraries(bench_map_insert benchmark::benchmark)
 
+add_executable(bench_unordered_map_reserve benchmark/bm_unordered_map_reserve.cpp)
+target_link_libraries(bench_unordered_map_reserve benchmark::benchmark)
+
+add_executable(bench_map_find benchmark/bm_map_find.cpp)
+target_link_libraries(bench_map_find benchmark::benchmark)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(highperfbox PRIVATE -O3)
 endif()
