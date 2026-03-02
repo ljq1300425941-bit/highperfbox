@@ -38,6 +38,9 @@ enable_testing()
 add_executable(bench_vector benchmark/bm_vector.cpp)
 target_link_libraries(bench_vector benchmark::benchmark)
 
+add_executable(bench_map_insert benchmark/bm_map_insert.cpp)
+target_link_libraries(bench_map_insert benchmark::benchmark)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(highperfbox PRIVATE -O3)
 endif()
