@@ -1,102 +1,79 @@
 # HighPerfBox
 
-A high-performance cache experimentation platform built with modern C++20.
-
-HighPerfBox focuses on performance measurement, cache design, and benchmark-driven optimization.
-
-## 🚀 Project Vision
-
-This project is designed to:
-
-- Explore cache data structure implementations (LRU, LFU, FIFO, ARC etc.)
-- Measure performance using Google Benchmark
-- Analyze STL container behavior at scale
-- Study concurrency strategies in modern C++
-
-The goal is to build a reproducible, benchmark-oriented performance lab.
+## English Summary
+HighPerfBox is a C++ performance engineering project focused on cache behavior analysis, workload modeling, and reproducible benchmarking.  
+The current version includes a generic cache interface, a single-threaded O(1) LRU cache, workload generators, correctness tests, and hit-rate experiments under different cache capacities.
 
 ---
 
-##  Architecture (Week 1 Completed)
+## 项目简介
 
-### Core Infrastructure
+HighPerfBox 是一个面向 C++ 性能工程训练的实验型项目，当前聚焦缓存策略、访问负载建模与 benchmark 评测，用于研究不同 workload 和容量配置下的缓存行为。
 
-- Modern CMake-based project structure
-- Strict include/src separation
-- C++20 enabled
-- Debug / Release build modes
+目前已完成：
 
-### Logger Module
-
-- Thread-safe logging
-- Atomic level filtering
-- Minimal lock scope design
-
-### Config System
-
-- Runtime-configurable parameters
-- Externalized behavior control
-- Designed for future experiment scaling
-
-### Benchmark Integration
-
-- Google Benchmark integrated via submodule
-- Release-mode performance measurement
-- Structured benchmark outputs
-
-## 📊 Benchmark Highlights
-
-### 1️⃣ map vs unordered_map (Insert)
-
-At 100k elements:
-
-| Container | Time (ns) |
-|------------|-----------|
-| std::map | ~7.8 ms |
-| std::unordered_map | ~2.2 ms |
-
-unordered_map shows ~3.5x speedup for insertion.
+- 基础工程骨架（CMake / include / src / tests / benchmark）
+- Logger 与 Config 模块
+- Google Benchmark 接入
+- 通用缓存接口 `ICache`
+- 单线程 O(1) LRU Cache
+- Workload 生成器（`Uniform` / `Hotspot`）
+- 基础正确性测试
+- LRU 命中率实验
 
 ---
 
-### 2️⃣ map vs unordered_map (Find)
+## 核心设计
 
-At 100k elements:
+### LRU Cache
+当前实现采用经典组合：
 
-| Container | Time (ns) |
-|------------|-----------|
-| std::map | ~4.2 ms |
-| std::unordered_map | ~0.19 ms |
+- `std::unordered_map<Key, list::iterator>`：O(1) 查找
+- `std::list<std::pair<Key, Value>>`：O(1) 顺序更新与尾部淘汰
 
-unordered_map shows ~22x speedup for find operations.
+支持：
 
-This demonstrates the impact of:
+- O(1) `get`
+- O(1) `put`
+- O(1) 访问顺序更新
+- O(1) 淘汰最久未使用元素
 
-- Tree traversal vs hash indexing
-- Cache locality differences
-- Algorithmic complexity in real-world hardware
+### Workload Generator
+当前支持两类访问负载：
 
-### 3️⃣ Reserve Impact on unordered_map
+- `Uniform`：均匀随机访问
+- `Hotspot`：热点访问（约 80% 请求落在前 20% key 空间）
 
-Pre-reserving capacity significantly reduces rehash overhead:
+支持固定 `seed` 保证实验可复现，支持配置 `key_space` 控制候选 key 范围。
 
-- Avoids bucket reallocation
-- Avoids full rehashing
-- Stabilizes performance at scale
+---
 
+## 实验结果
 
-## 📁 Project Structure
+### LRU 在不同容量下的命中率表现
+
+| Capacity | Uniform | Hotspot |
+|----------|---------|---------|
+| 50       | 4.83%   | 17.69%  |
+| 100      | 9.63%   | 34.54%  |
+| 200      | 19.65%  | 62.76%  |
+| 500      | 48.27%  | 86.93%  |
+
+### 结论
+- 缓存容量增大时，LRU 命中率持续上升。
+- Hotspot 负载下命中率显著高于 Uniform，说明 LRU 对时间局部性更强的 workload 更敏感。
+- 当缓存容量逐渐接近热点集合大小时，命中率会出现更明显提升。
+
+---
+
+## 工程结构
+
+```text
 highperfbox/
-├── include/ # Public interfaces
-├── src/ # Implementation
-├── benchmark/ # Performance tests
-├── third_party/ # External dependencies
-├── docs/ # Learning notes
+├── include/        # 公共头文件
+├── src/            # 源码实现
+├── benchmark/      # benchmark 程序
+├── tests/          # 正确性测试
+├── docs/           # 实验报告与文档
+├── third_party/    # 第三方依赖
 └── CMakeLists.txt
-
-## 🛠 Build Instructions
-
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j
