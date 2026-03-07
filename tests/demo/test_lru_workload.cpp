@@ -45,27 +45,35 @@ CacheStats run_lru_experiment(
 
 
 int main() {
-    auto uniform_stats = run_lru_experiment(
-        hp::workload::WorkloadType::Uniform,
-        1000,
-        10000,
-        100
-    );
+    const uint64_t key_space = 1000;
+    const size_t sequence_len = 10000;
+    const std::vector<size_t> capacities = {50, 100, 200, 500};
 
-    auto hotspot_stats = run_lru_experiment(
-        hp::workload::WorkloadType::Hotspot,
-        1000,
-        10000,
-        100
-    );
 
-    std::cout << "Uniform hit rate: " << uniform_stats.hit_rate() << "\n";
-    std::cout << "Hotspot hit rate: " << hotspot_stats.hit_rate() << "\n";
+     for (auto cap : capacities) {
+        auto uniform_stats = run_lru_experiment(
+            hp::workload::WorkloadType::Uniform,
+            key_space,
+            sequence_len,
+            cap
+        );
 
-    assert(uniform_stats.requests == 10000);
-    assert(hotspot_stats.requests == 10000);
-    assert(uniform_stats.hits + uniform_stats.misses == uniform_stats.requests);
-    assert(hotspot_stats.hits + hotspot_stats.misses == hotspot_stats.requests);
+        auto hotspot_stats = run_lru_experiment(
+            hp::workload::WorkloadType::Hotspot,
+            key_space,
+            sequence_len,
+            cap
+        );
+
+        std::cout << "Capacity = " << cap << "\n";
+        std::cout << "  Uniform hit rate: " << uniform_stats.hit_rate() << "\n";
+        std::cout << "  Hotspot hit rate: " << hotspot_stats.hit_rate() << "\n";
+
+        assert(uniform_stats.requests == sequence_len);
+        assert(hotspot_stats.requests == sequence_len);
+        assert(uniform_stats.hits + uniform_stats.misses == uniform_stats.requests);
+        assert(hotspot_stats.hits + hotspot_stats.misses == hotspot_stats.requests);
+    }
 
     return 0;
 }
