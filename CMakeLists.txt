@@ -31,21 +31,37 @@ target_compile_options(highperfbox PRIVATE
     -Wpedantic
 )
 
-add_subdirectory(third_party/benchmark)
+#LRU basic test
+
+add_executable(test_lru_basic
+    test/demo/test_lru_basic.cpp
+)
+
+target_include_directories(test_lru_basic
+    PUBLIC ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_options(test_lru_basic PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
 
 enable_testing()
 
-add_executable(bench_vector benchmark/bm_vector.cpp)
-target_link_libraries(bench_vector benchmark::benchmark)
+#add_subdirectory(third_party/benchmark)
 
-add_executable(bench_map_insert benchmark/bm_map_insert.cpp)
-target_link_libraries(bench_map_insert benchmark::benchmark)
+#add_executable(bench_vector benchmark/bm_vector.cpp)
+#target_link_libraries(bench_vector benchmark::benchmark)
 
-add_executable(bench_unordered_map_reserve benchmark/bm_unordered_map_reserve.cpp)
-target_link_libraries(bench_unordered_map_reserve benchmark::benchmark)
+#add_executable(bench_map_insert benchmark/bm_map_insert.cpp)
+#target_link_libraries(bench_map_insert benchmark::benchmark)
 
-add_executable(bench_map_find benchmark/bm_map_find.cpp)
-target_link_libraries(bench_map_find benchmark::benchmark)
+#add_executable(bench_unordered_map_reserve benchmark/bm_unordered_map_reserve.cpp)
+#target_link_libraries(bench_unordered_map_reserve benchmark::benchmark)
+
+#add_executable(bench_map_find benchmark/bm_map_find.cpp)
+#target_link_libraries(bench_map_find benchmark::benchmark)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(highperfbox PRIVATE -O3)
