@@ -34,7 +34,7 @@ target_compile_options(highperfbox PRIVATE
 #LRU basic test
 
 add_executable(test_lru_basic
-    test/demo/test_lru_basic.cpp
+    tests/demo/test_lru_basic.cpp
 )
 
 target_include_directories(test_lru_basic
@@ -46,6 +46,43 @@ target_compile_options(test_lru_basic PRIVATE
     -Wextra
     -Wpedantic
 )
+
+add_executable(test_workload_basic
+    tests/demo/test_workload_basic.cpp
+)
+
+target_include_directories(test_workload_basic
+    PUBLIC ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_options(test_workload_basic PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(test_workload_basic PRIVATE -O3)
+endif()
+
+
+add_executable(test_lru_workload
+    tests/demo/test_lru_workload.cpp
+)
+
+target_include_directories(test_lru_workload
+    PUBLIC ${PROJECT_SOURCE_DIR}/include
+)
+
+target_compile_options(test_lru_workload PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(test_lru_workload PRIVATE -O3)
+endif()
 
 enable_testing()
 
