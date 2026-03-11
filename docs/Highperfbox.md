@@ -2,7 +2,16 @@
 
 # Highperfbox
 
-## 1.目录树结构解析
+
+
+## 一分钟项目介绍稿
+
+​	HighPerfBox 是一个面向 C++ 性能工程训练的实验型项目，当前聚焦缓存策略、访问负载建模与 benchmark 评测，用来研究不同 workload 和容量配置下的缓存行为。
+​	 我目前已经完成了通用缓存接口 ICache、基于 `unordered_map + list` 的单线程 O(1) LRU Cache、Workload Generator，以及基础正确性测试，并接入 Google Benchmark 做性能评测。
+ 	在实验设计上，我构建了 Uniform 和 Hotspot-like 两类访问负载，并在不同缓存容量下观察命中率变化。实验结果表明，随着容量增大，LRU 命中率持续提升，而且在热点访问模式下明显优于均匀访问，例如容量为 500 时，Hotspot-like 和 Uniform 的命中率分别达到 86.93% 和 48.27%。
+ 	下一步我会继续补充 throughput 和总耗时统计，把这个项目进一步打磨成一个可复现、可量化、可解释的性能实验系统。
+
+## 目录树结构解析
 
 ### highperfbox/
 
@@ -207,6 +216,10 @@ src/core/memory/
 
 你删掉也没事。
 
+------
+
+
+
 ### 为什么include和src必须分开？
 
 #### 编译层面
@@ -278,9 +291,11 @@ src/core/memory/
 
 “变化隔离原则”。
 
+------
 
 
-## 2.linkage
+
+## linkage
 
 ### 是什么
 
@@ -369,6 +384,10 @@ inline int add(int a,int b){ return a+b; }
 - 大函数实现
 - 私有实现细节（匿名命名空间）
 
+------
+
+
+
 ## Git
 
 ### 修改后提交
@@ -378,6 +397,10 @@ git add .
 git commit -m "写清楚你做了什么"
 git push
 ```
+
+
+
+------
 
 ## CMake
 
@@ -532,6 +555,10 @@ make 也不是编译器。
 CMake → Make → g++ → binary
 ```
 
+
+
+------
+
 ## Logger
 
 ### atomic
@@ -621,6 +648,18 @@ atomic 保证：
 | IO 操作      | ❌         | ✅        |
 
 ### 时间拼写操作
+
+### 踩坑
+
+我开始认为如果锁的粒度足够小，那么加锁不太会影响性能
+
+但是经过测试后，加锁解锁本身就会产生开销
+
+而且实际上会比核心代码开销更大，所以才使用原子操作，提升性能
+
+
+
+------
 
 ## Config
 
@@ -715,6 +754,10 @@ enable_log=false
 改 config.ini。
 
 不需要编译。
+
+
+
+------
 
 ## benchmark
 
@@ -827,3 +870,192 @@ unordered_map：
 ✅ 性能敏感路径
 ✅ 服务端核心逻辑
 
+## cache
+
+
+
+### LRU
+
+#### LRU 在什么情况下表现很差
+
+顺序扫描
+
+#### 为什么真实系统很少用纯 LRU
+
+1.维护成本高
+
+2.scan pollution 即上文所说
+
+3.并发难
+
+
+
+## assert
+
+### 是什么
+
+先包含头文件：
+
+```
+#include <cassert>
+```
+
+然后写：
+
+```
+assert(x == 10);
+```
+
+意思是：
+
+- 如果 `x == 10` 为真，程序继续跑
+- 如果为假，程序直接终止，并提示哪一行断言失败
+
+### 和if的区别
+
+比如你也可以写：
+
+```
+if (v != 10) {
+    std::cout << "error\n";
+}
+```
+
+但 `assert` 更适合“这里必须成立”的场景，因为它更像一把闸刀：
+
+- `if` 更偏业务逻辑判断
+- `assert` 更偏“程序员自检”
+
+你现在用它，不是在写正式测试框架，而是在给 LRU 做一次快速体检。
+
+## workload
+
+主要就是读懂代码
+
+#### `class WorkloadType`
+
+​	这是在定义“工作负载类型”。
+
+你可以理解成一个开关：
+
+- `Uniform` = 均匀随机访问
+- `Hotspot` = 热点访问
+
+为什么不用普通 enum？
+
+因为 `enum class` 更安全，不容易和别的名字混在一起。
+
+##### uniform模式
+
+意思很简单：
+
+- 用随机引擎 `rng_`
+- 按均匀分布 `dist_`
+- 生成一个 key
+
+所以所有 key 被访问的概率差不多一样。
+
+这适合做基线测试。
+
+##### hotspot模式
+
+这段是今天最值得吃透的部分。
+
+它模拟的是：
+
+> 80% 的访问集中在前 20% 的 key 上
+
+这就是“热点”。
+
+#### key_space
+
+限定key的范围 很重要
+
+后面缓存容量、命中率、热点分布都和它有关。
+
+#### seed
+
+随机数种子 确保重复试验后数据可以复现
+
+#### dist_(0, key_space - 1)
+
+这是一个均匀整数分布对象，表示：
+
+> 从 `[0, key_space - 1]` 里等概率取值
+
+比如 `key_space = 100`，那就是从 0 到 99 里均匀随机取一个数。
+
+注意这里不是“立刻生成随机数”，而是**先创建分布规则**。
+
+#### next统一接口
+
+涉及一种设计思想
+
+它的意思是：
+
+> 对外暴露统一接口 `next()`
+>  但内部根据 workload 类型，走不同生成逻辑
+
+```
+uint64_t next() {
+    switch (type_) {
+        case WorkloadType::Uniform:
+            return next_uniform();
+        case WorkloadType::Hotspot:
+            return next_hotspot();
+        default:
+            throw std::runtime_error("unknown workload type");
+    }
+}
+```
+
+#### generate(size_t n)
+
+相当于多次调用next
+
+next是单发
+
+generate是连发
+
+#### 实际测试
+
+![image-20260308001004884](C:\Users\13004\AppData\Roaming\Typora\typora-user-images\image-20260308001004884.png)
+
+观察数据能看出下面几点
+
+1.capacity增加 hit rate增加
+
+这个不用解释很简单
+
+2.hotspot一直比uniform多 
+
+这个跟lru特性有关 直接看lru就行
+
+3.hotspot比uniform增长的快很多
+
+直觉上讲hotspot是20%数据被80%访问 那么20%就是热点数据
+
+key_space给的是1000 即热点数据量为200
+
+也就是说capacity达到200左右就能够大体装下所有热点数据了
+
+**Uniform 下：**
+
+容量变大确实有帮助，但因为访问分散，所以帮助是“有限但稳定”的。
+
+**Hotspot 下：**
+
+容量一旦足够把主要热点区装进去，命中率会迅速抬升。
+
+你这组数据就很能说明这一点：
+
+- 50   → 100：17.69% → 34.54%
+- 100 → 200：34.54% → 62.76%
+- 200 → 500：62.76% → 86.93%
+
+4.capacity无限提升 hit rate不会无限增加
+
+看数据也知道 会有一个提升峰值 之后增速就会变缓
+
+因为缓存收益会逐渐趋于饱和。
+当主要热点已经被装进缓存后，再继续扩大容量，新增空间带来的边际收益会变小。
