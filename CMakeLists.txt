@@ -86,7 +86,13 @@ endif()
 
 enable_testing()
 
-#add_subdirectory(third_party/benchmark)
+add_subdirectory(third_party/benchmark)
+
+add_executable(bench_lru_workload benchmark/bench_lru_workload.cpp)
+target_link_libraries(bench_lru_workload PRIVATE benchmark::benchmark)
+target_include_directories(bench_lru_workload PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
 
 #add_executable(bench_vector benchmark/bm_vector.cpp)
 #target_link_libraries(bench_vector benchmark::benchmark)
