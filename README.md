@@ -1,8 +1,8 @@
 # HighPerfBox
 
 ## English Summary
-HighPerfBox is a C++ performance engineering project focused on cache behavior analysis, workload modeling, and reproducible benchmarking.  
-The current version includes a generic cache interface, a single-threaded O(1) LRU cache, workload generators, correctness tests, and hit-rate experiments under different cache capacities.
+HighPerfBox is a C++ performance engineering project focused on cache behavior analysis, workload modeling, and reproducible benchmarking.
+The current version includes a generic cache interface, a single-threaded O(1) LRU cache, workload generators, correctness tests, and experiments on hit rate, CPU time, and throughput under different cache capacities and access patterns.
 
 ---
 
@@ -61,10 +61,25 @@ HighPerfBox 是一个面向 C++ 性能工程训练的实验型项目，当前聚
 | 200      | 19.65%  | 62.76%       |
 | 500      | 48.27%  | 86.93%       |
 
+### LRU 在不同容量下的吞吐与 CPU Time 表现
+
+| Capacity | Workload     | HitRate | CPU Time (ns) | Throughput (ops/sec) |
+| -------- | ------------ | ------- | ------------- | -------------------- |
+| 50       | Uniform      | 5.01%   | 4839926       | 20.6615M/s           |
+| 50       | Hotspot-like | 17.19%  | 4226491       | 23.6603M/s           |
+| 100      | Uniform      | 10.01%  | 4736331       | 21.1134M/s           |
+| 100      | Hotspot-like | 34.29%  | 3797354       | 26.3341M/s           |
+| 200      | Uniform      | 20.12%  | 4291465       | 23.3021M/s           |
+| 200      | Hotspot-like | 63.83%  | 2286072       | 43.7432M/s           |
+| 500      | Uniform      | 49.83%  | 2805374       | 35.6459M/s           |
+| 500      | Hotspot-like | 89.72%  | 1240770       | 80.5951M/s           |
+
 ### 结论
+
 - 缓存容量增大时，LRU 命中率持续上升。
 - Hotspot-like 负载下命中率显著高于 Uniform，说明 LRU 对时间局部性更强的 workload 更敏感。
-- 当缓存容量逐渐接近热点集合大小时，命中率会出现更明显提升。
+- 随着命中率提升，CPU Time 下降、Throughput 上升，说明缓存效果改善会直接带来整体处理效率提升。
+- 当缓存容量逐渐接近热点集合大小时，性能收益会更加明显。
 
 ---
 
@@ -81,17 +96,69 @@ highperfbox/
 └── CMakeLists.txt
 ```
 
+------
+
+## 快速开始
+
+### 1.构建项目
+
+```
+```bash
+mkdir -p build
+cd build
+cmake ..
+cmake --build . --config Release
+```
+
+### 2.运行测试
+
+```
+./test_lru_basic
+./test_workload_basic
+./test_lru_workload
+```
+
+### 3.运行benchmark
+
+```
+./bench_lru_workload
+```
+
+
+
+------
+
+## 实验可复现性
+
+为了保证 benchmark 结果具有可比性，当前实验固定了以下关键参数：
+
+\- 固定随机种子 `seed`
+\- 固定候选 key 范围 `key_space`
+\- 固定访问序列长度 `total_ops`
+\- 使用统一的缓存容量配置：50 / 100 / 200 / 500
+\- 使用统一的 workload 类型：Uniform / Hotspot-like
+
+这样可以减少随机输入波动对结果的影响，使不同容量与不同 workload 下的命中率、CPU Time 和吞吐结果具有可比性。
+
+------
+
+
+
 ## 当前进度
 
-当前项目已完成单线程 LRU 缓存实现、Workload Generator、基础正确性测试以及命中率实验，已经具备“缓存策略 + 访问负载 + benchmark + 数据分析”的基础实验链路。
+当前项目已完成单线程 LRU 缓存实现、Workload Generator、基础正确性测试，以及命中率、CPU Time 与 Throughput 三类核心实验结果，已经具备“缓存策略 + 访问负载 + benchmark + 数据分析”的基础实验链路。
 
-目前项目的重点不是继续横向扩展更多缓存策略，而是把现有结果进一步整理为可复现、可量化、可解释的性能实验项目。
+目前项目的重点不是继续横向扩展更多缓存策略，而是把现有结果进一步整理为可复现、可量化、可解释、可追问的性能实验项目。
+
+------
+
+
 
 ## 下一步计划
 
 接下来将重点补充以下内容：
 
-\- 增加 throughput 与总耗时统计
-\- 完善 `docs/week2_lru_workload_analysis.md` 实验分析文档
-\- 继续打磨 1 分钟 / 3 分钟项目口述稿
+\- 继续完善 `docs/week2_lru_workload_analysis.md` 的实验解释与结论表达
+\- 打磨 1 分钟 / 3 分钟项目口述稿
+\- 整理高频项目追问清单，如 workload 影响、benchmark 可复现性、LRU 设计权衡等
 \- 统一 README、docs、简历中的项目表述口径
