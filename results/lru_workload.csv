@@ -1,0 +1,18 @@
+2026-03-16T01:20:56+08:00
+Running ./build/bench_lru_workload
+Run on (32 X 2419.2 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x16)
+  L1 Instruction 32 KiB (x16)
+  L2 Unified 2048 KiB (x16)
+  L3 Unified 36864 KiB (x1)
+Load Average: 0.28, 0.11, 0.03
+name,iterations,real_time,cpu_time,time_unit,bytes_per_second,items_per_second,label,error_occurred,error_message,"HitRate","OpsPerSec"
+"BM_LRU_Workload/50/1000/100000/0",147,4.37302e+06,4.76513e+06,ns,,,,,,0.05009,2.09858e+07
+"BM_LRU_Workload/50/1000/100000/1",159,3.93041e+06,4.32831e+06,ns,,,,,,0.17188,2.31037e+07
+"BM_LRU_Workload/100/1000/100000/0",146,4.29495e+06,4.7297e+06,ns,,,,,,0.10007,2.1143e+07
+"BM_LRU_Workload/100/1000/100000/1",193,3.34999e+06,3.68948e+06,ns,,,,,,0.34291,2.71041e+07
+"BM_LRU_Workload/200/1000/100000/0",163,3.7014e+06,4.07598e+06,ns,,,,,,0.20122,2.4534e+07
+"BM_LRU_Workload/200/1000/100000/1",313,2.00831e+06,2.21167e+06,ns,,,,,,0.63828,4.52148e+07
+"BM_LRU_Workload/500/1000/100000/0",243,2.60951e+06,2.87391e+06,ns,,,,,,0.49832,3.47958e+07
+"BM_LRU_Workload/500/1000/100000/1",536,1.1447e+06,1.25896e+06,ns,,,,,,0.89724,7.94309e+07

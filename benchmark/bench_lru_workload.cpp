@@ -3,6 +3,32 @@
 #include "hp/workload/workload.hpp"
 #include "hp/cache/lru_cache.hpp"
 
+struct BenchCase {
+    int capacity;
+    int key_space;
+    int total_ops;
+    int workload_type; // 0: Uniform, 1: Hotspot-like
+};
+
+static const std::vector<BenchCase> kBenchCases = {
+    {50, 1000, 100000, 0},
+    {50, 1000, 100000, 1},
+    {100, 1000, 100000, 0},
+    {100, 1000, 100000, 1},
+    {200, 1000, 100000, 0},
+    {200, 1000, 100000, 1},
+    {500, 1000, 100000, 0},
+    {500, 1000, 100000, 1},
+};
+
+static void CustomArguments(benchmark::Benchmark* b)
+{
+    for(const auto&c:kBenchCases)
+    {
+        b->Args({c.capacity,c.key_space,c.total_ops,c.workload_type});
+    }
+}
+
 static void BM_LRU_Workload(benchmark::State& state) {
     const int capacity = state.range(0);
     const int key_space = state.range(1);
@@ -54,14 +80,6 @@ static void BM_LRU_Workload(benchmark::State& state) {
     }
 }
 
-BENCHMARK(BM_LRU_Workload)
-    ->Args({50, 1000, 100000, 0})
-    ->Args({50, 1000, 100000, 1})
-    ->Args({100, 1000, 100000, 0})
-    ->Args({100, 1000, 100000, 1})
-    ->Args({200, 1000, 100000, 0})
-    ->Args({200, 1000, 100000, 1})
-    ->Args({500, 1000, 100000, 0})
-    ->Args({500, 1000, 100000, 1});
+BENCHMARK(BM_LRU_Workload)->Apply(CustomArguments);
 
 BENCHMARK_MAIN();

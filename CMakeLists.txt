@@ -80,6 +80,12 @@ target_compile_options(test_lru_workload PRIVATE
     -Wpedantic
 )
 
+add_executable(test_workload tests/demo/test_workload.cpp)
+
+target_include_directories(test_workload PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(test_lru_workload PRIVATE -O3)
 endif()
