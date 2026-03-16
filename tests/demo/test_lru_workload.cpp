@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <vector>
 
 struct CacheStats {
     uint64_t requests = 0;
@@ -15,14 +16,34 @@ struct CacheStats {
     }
 };
 
-CacheStats run_lru_experiment(
-    hp::workload::WorkloadType type,
-    uint64_t key_space,
-    size_t sequence_len,
-    size_t cache_capacity,
-    uint64_t seed = 42) {
+static hp::workload::WorkloadConfig make_uniform_cfg(uint64_t key_space, uint64_t seed = 42) {
+    hp::workload::WorkloadConfig cfg;
+    cfg.type = hp::workload::WorkloadType::Uniform;
+    cfg.key_space = key_space;
+    cfg.seed = seed;
+    return cfg;
+}
 
-    hp::workload::WorkloadGenerator gen(type, key_space, seed);
+static hp::workload::WorkloadConfig make_hotspot_cfg(
+    uint64_t key_space,
+    uint64_t seed = 42,
+    double hot_key_ratio = 0.2,
+    double hot_access_ratio = 0.8) {
+    hp::workload::WorkloadConfig cfg;
+    cfg.type = hp::workload::WorkloadType::Hotspot;
+    cfg.key_space = key_space;
+    cfg.seed = seed;
+    cfg.hot_key_ratio = hot_key_ratio;
+    cfg.hot_access_ratio = hot_access_ratio;
+    return cfg;
+}
+
+CacheStats run_lru_experiment(
+    const hp::workload::WorkloadConfig& cfg,
+    size_t sequence_len,
+    size_t cache_capacity) {
+
+    hp::workload::WorkloadGenerator gen(cfg);
     auto seq = gen.generate(sequence_len);
 
     hp::cache::LRUCache<uint64_t, uint64_t> cache(cache_capacity);
@@ -31,11 +52,11 @@ CacheStats run_lru_experiment(
     uint64_t value = 0;
 
     for (auto key : seq) {
-        stats.requests++;
+        ++stats.requests;
         if (cache.get(key, value)) {
-            stats.hits++;
+            ++stats.hits;
         } else {
-            stats.misses++;
+            ++stats.misses;
             cache.put(key, key);
         }
     }
@@ -43,24 +64,23 @@ CacheStats run_lru_experiment(
     return stats;
 }
 
-
 int main() {
     const uint64_t key_space = 1000;
     const size_t sequence_len = 10000;
     const std::vector<size_t> capacities = {50, 100, 200, 500};
 
+    auto uniform_cfg = make_uniform_cfg(key_space, 42);
+    auto hotspot_cfg = make_hotspot_cfg(key_space, 42, 0.2, 0.8);
 
-     for (auto cap : capacities) {
+    for (auto cap : capacities) {
         auto uniform_stats = run_lru_experiment(
-            hp::workload::WorkloadType::Uniform,
-            key_space,
+            uniform_cfg,
             sequence_len,
             cap
         );
 
         auto hotspot_stats = run_lru_experiment(
-            hp::workload::WorkloadType::Hotspot,
-            key_space,
+            hotspot_cfg,
             sequence_len,
             cap
         );
@@ -75,5 +95,6 @@ int main() {
         assert(hotspot_stats.hits + hotspot_stats.misses == hotspot_stats.requests);
     }
 
+    std::cout << "All LRU workload tests passed.\n";
     return 0;
 }

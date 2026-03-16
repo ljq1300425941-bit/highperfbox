@@ -4,6 +4,7 @@
 #include <random>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 namespace hp::workload {
 
@@ -12,22 +13,53 @@ enum class WorkloadType {
     Hotspot
 };
 
+struct WorkloadConfig {
+    WorkloadType type{WorkloadType::Uniform};
+    uint64_t key_space{1000};
+    uint64_t seed{42};
+
+    // Hotspot 参数
+    double hot_key_ratio{0.2};      // 前多少比例的 key 作为热点区
+    double hot_access_ratio{0.8};   // 多少比例的请求落在热点区
+};
+
 class WorkloadGenerator {
 public:
-    WorkloadGenerator(WorkloadType type,
-                      uint64_t key_space,
-                      uint64_t seed = 42)
-        : type_(type),
-          key_space_(key_space),
-          rng_(seed),
-          dist_(0, key_space - 1) {
-        if (key_space_ == 0) {
+    explicit WorkloadGenerator(const WorkloadConfig& cfg)
+        : cfg_(cfg),
+          rng_(cfg.seed),
+          full_dist_(0, cfg.key_space - 1) {
+        if (cfg_.key_space == 0) {
             throw std::invalid_argument("key_space must be > 0");
+        }
+
+        if (cfg_.hot_key_ratio <= 0.0 || cfg_.hot_key_ratio > 1.0) {
+            throw std::invalid_argument("hot_key_ratio must be in (0, 1]");
+        }
+
+        if (cfg_.hot_access_ratio < 0.0 || cfg_.hot_access_ratio > 1.0) {
+            throw std::invalid_argument("hot_access_ratio must be in [0, 1]");
+        }
+
+        hot_key_count_ = std::max<uint64_t>(
+            1, static_cast<uint64_t>(cfg_.key_space * cfg_.hot_key_ratio));
+
+        if (hot_key_count_ > cfg_.key_space) {
+            hot_key_count_ = cfg_.key_space;
+        }
+
+        hot_dist_ = std::uniform_int_distribution<uint64_t>(0, hot_key_count_ - 1);
+
+        // 冷区是 [hot_key_count_, key_space)
+        has_cold_region_ = (hot_key_count_ < cfg_.key_space);
+        if (has_cold_region_) {
+            cold_dist_ = std::uniform_int_distribution<uint64_t>(
+                hot_key_count_, cfg_.key_space - 1);
         }
     }
 
     uint64_t next() {
-        switch (type_) {
+        switch (cfg_.type) {
             case WorkloadType::Uniform:
                 return next_uniform();
             case WorkloadType::Hotspot:
@@ -48,28 +80,33 @@ public:
 
 private:
     uint64_t next_uniform() {
-        return dist_(rng_);
+        return full_dist_(rng_);
     }
 
     uint64_t next_hotspot() {
-        // 80% 访问落在前 20% 热点区 
-        std::uniform_int_distribution<int> coin(1, 100);
-        uint64_t hot_range = key_space_ / 5;
-        if (hot_range == 0) hot_range = 1;
+        std::bernoulli_distribution choose_hot(cfg_.hot_access_ratio);
 
-        if (coin(rng_) <= 80) {
-            std::uniform_int_distribution<uint64_t> hot_dist(0, hot_range - 1);
-            return hot_dist(rng_);
-        } else {
-            return dist_(rng_);
+        if (choose_hot(rng_)) {
+            return hot_dist_(rng_);
         }
+
+        // 没有冷区时只能落在热点区
+        if (!has_cold_region_) {
+            return hot_dist_(rng_);
+        }
+
+        return cold_dist_(rng_);
     }
 
 private:
-    WorkloadType type_;
-    uint64_t key_space_;
+    WorkloadConfig cfg_;
+    uint64_t hot_key_count_{1};
+    bool has_cold_region_{false};
+
     std::mt19937_64 rng_;
-    std::uniform_int_distribution<uint64_t> dist_;
+    std::uniform_int_distribution<uint64_t> full_dist_;
+    std::uniform_int_distribution<uint64_t> hot_dist_;
+    std::uniform_int_distribution<uint64_t> cold_dist_;
 };
 
 } // namespace hp::workload

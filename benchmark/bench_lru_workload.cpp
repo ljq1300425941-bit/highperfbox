@@ -2,55 +2,31 @@
 #include <vector>
 #include "hp/workload/workload.hpp"
 #include "hp/cache/lru_cache.hpp"
+#include "hp/benchmark/bench_case.hpp"
 
-struct BenchCase {
-    int capacity;
-    int key_space;
-    int total_ops;
-    int workload_type; // 0: Uniform, 1: Hotspot-like
-};
+static void BM_LRU_Workload_Case(benchmark::State& state, const hp::bench::BenchCase& bc) {
+    std::vector<uint64_t> seq;;
+    seq.reserve(bc.total_ops);
 
-static const std::vector<BenchCase> kBenchCases = {
-    {50, 1000, 100000, 0},
-    {50, 1000, 100000, 1},
-    {100, 1000, 100000, 0},
-    {100, 1000, 100000, 1},
-    {200, 1000, 100000, 0},
-    {200, 1000, 100000, 1},
-    {500, 1000, 100000, 0},
-    {500, 1000, 100000, 1},
-};
+    hp::workload::WorkloadConfig cfg;
+    cfg.type = (bc.workload == hp::bench::WorkloadKind::Uniform)
+             ? hp::workload::WorkloadType::Uniform
+             : hp::workload::WorkloadType::Hotspot;
+    cfg.key_space = bc.key_space;
+    cfg.seed = 42;
+    cfg.hot_key_ratio = bc.hot_key_ratio;
+    cfg.hot_access_ratio = bc.hot_access_ratio;
 
-static void CustomArguments(benchmark::Benchmark* b)
-{
-    for(const auto&c:kBenchCases)
-    {
-        b->Args({c.capacity,c.key_space,c.total_ops,c.workload_type});
-    }
-}
+    hp::workload::WorkloadGenerator gen(cfg);
 
-static void BM_LRU_Workload(benchmark::State& state) {
-    const int capacity = state.range(0);
-    const int key_space = state.range(1);
-    const int total_ops = state.range(2);
-    const int workload_type = state.range(3); // 0: Uniform, 1: Hotspot-like
-
-    // 计时外：生成访问序列
-    std::vector<int> seq;
-    seq.reserve(total_ops);
-    hp::workload::WorkloadGenerator gen(
-        workload_type == 0 ? hp::workload::WorkloadType::Uniform : hp::workload::WorkloadType::Hotspot,
-        key_space,
-        /*seed=*/42
-    );
-    for (int i = 0; i < total_ops; ++i) {
+    for (int i = 0; i < bc.total_ops; ++i) {
         seq.push_back(gen.next());
     }
 
     for (auto _ : state) {
         state.PauseTiming();
 
-        hp::cache::LRUCache<int, int> cache(capacity);
+        hp::cache::LRUCache<int, int> cache(bc.capacity);
         int hits = 0;
         int misses = 0;
         int value = 0;
@@ -75,11 +51,33 @@ static void BM_LRU_Workload(benchmark::State& state) {
 
         state.counters["OpsPerSec"] =
             benchmark::Counter(
-                static_cast<double>(total_ops),
+                static_cast<double>(bc.total_ops),
                 benchmark::Counter::kIsIterationInvariantRate);
     }
 }
 
-BENCHMARK(BM_LRU_Workload)->Apply(CustomArguments);
+int main(int argc, char** argv) {
+    benchmark::MaybeReenterWithoutASLR(argc, argv);
 
-BENCHMARK_MAIN();
+    auto register_case = [](const std::string& prefix, const hp::bench::BenchCase& bc) {
+        std::string name = prefix + hp::bench::CaseName(bc);
+        benchmark::RegisterBenchmark(name.c_str(), BM_LRU_Workload_Case, bc);
+    };
+
+    for (const auto& bc : hp::bench::DefaultBenchCases()) {
+        register_case("LRU/", bc);
+    }
+
+    for (const auto& bc : hp::bench::KeySpaceSweepCases()) {
+        register_case("LRU_KeySpaceSweep/", bc);
+    }
+
+    for (const auto& bc : hp::bench::HotspotIntensitySweepCases()) {
+        register_case("LRU_HotspotSweep/", bc);
+    }
+
+    benchmark::Initialize(&argc, argv);
+    benchmark::RunSpecifiedBenchmarks();
+    benchmark::Shutdown();
+    return 0;
+}
