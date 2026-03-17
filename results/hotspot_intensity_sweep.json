@@ -1,6 +1,6 @@
 {
   "context": {
-    "date": "2026-03-17T00:29:54+08:00",
+    "date": "2026-03-17T14:20:56+08:00",
     "host_name": "Electron",
     "executable": "./build/bench_lru_workload",
     "num_cpus": 32,
@@ -33,7 +33,7 @@
         "num_sharing": 32
       }
     ],
-    "load_avg": [0.192871,0.274902,0.119629],
+    "load_avg": [0.30127,0.114746,0.0249023],
     "library_version": "v1.9.5-20-g4ca840dc",
     "library_build_type": "release",
     "json_schema_version": 1
@@ -48,12 +48,12 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 156,
-      "real_time": 4.5402058332258146e+06,
-      "cpu_time": 4.5605758269230733e+06,
+      "iterations": 188,
+      "real_time": 3.7605898563854559e+06,
+      "cpu_time": 3.7611237287234114e+06,
       "time_unit": "ns",
       "HitRate": 3.3393000000000000e-01,
-      "OpsPerSec": 2.1927055660308566e+07
+      "OpsPerSec": 2.6587798544437062e+07
     },
     {
       "name": "LRU_HotspotSweep/cap_200_ks_1000_ops_100000_Hotspot_hk_20_ha_80",
@@ -64,12 +64,12 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 218,
-      "real_time": 3.0333455734520559e+06,
-      "cpu_time": 3.1988211605504598e+06,
+      "iterations": 263,
+      "real_time": 2.5619845057022036e+06,
+      "cpu_time": 2.6355612889733776e+06,
       "time_unit": "ns",
       "HitRate": 5.8162000000000003e-01,
-      "OpsPerSec": 3.1261516346475523e+07
+      "OpsPerSec": 3.7942581877484128e+07
     },
     {
       "name": "LRU_HotspotSweep/cap_200_ks_1000_ops_100000_Hotspot_hk_10_ha_90",
@@ -80,12 +80,12 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 416,
-      "real_time": 1.4275107476552106e+06,
-      "cpu_time": 1.5056717932692228e+06,
+      "iterations": 475,
+      "real_time": 1.3178404105249348e+06,
+      "cpu_time": 1.3940715536842062e+06,
       "time_unit": "ns",
       "HitRate": 9.1124000000000005e-01,
-      "OpsPerSec": 6.6415536537928239e+07
+      "OpsPerSec": 7.1732329474569157e+07
     }
   ]
 }
