@@ -68,16 +68,20 @@ def format_cpu(x, unit):
     return f"{x:.0f} {unit}"
 
 
-def group_name(name: str) -> str:
-    if "/" not in name:
-        return "Other"
-    prefix = name.split("/", 1)[0]
+def group_name(prefix: str) -> str:
     mapping = {
-        "LRU": "Default Capacity Sweep",
+        "LRU": "Default Cases",
         "LRU_KeySpaceSweep": "Key Space Sweep",
         "LRU_HotspotSweep": "Hotspot Intensity Sweep",
+        "LRU_ZipfSweep": "Zipf Alpha Sweep",
     }
     return mapping.get(prefix, prefix)
+
+
+def extract_prefix(name: str) -> str:
+    if "/" not in name:
+        return name
+    return name.split("/", 1)[0]
 
 
 def strip_prefix(name: str) -> str:
@@ -116,8 +120,9 @@ def to_markdown(rows, title=None, group_by_prefix=False, simplify_name=False):
 
     grouped = OrderedDict()
     for r in rows:
-        g = group_name(r["name"])
-        grouped.setdefault(g, []).append(r)
+        prefix = extract_prefix(r["name"])
+        section = group_name(prefix)
+        grouped.setdefault(section, []).append(r)
 
     for section, section_rows in grouped.items():
         lines.append(f"## {section}")
@@ -134,7 +139,7 @@ def main():
     parser.add_argument("-o", "--output", help="path to markdown output file")
     parser.add_argument("--title", help="optional markdown title")
     parser.add_argument("--group-by-prefix", action="store_true",
-                        help="group benchmarks by prefix such as LRU / LRU_KeySpaceSweep / LRU_HotspotSweep")
+                        help="group benchmarks by prefix such as LRU / LRU_KeySpaceSweep / LRU_HotspotSweep / LRU_ZipfSweep")
     parser.add_argument("--simplify-name", action="store_true",
                         help="remove prefix before rendering benchmark name")
     args = parser.parse_args()

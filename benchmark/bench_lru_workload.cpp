@@ -1,22 +1,42 @@
 #include <benchmark/benchmark.h>
+#include <cstdint>
+#include <string>
 #include <vector>
-#include "hp/workload/workload.hpp"
-#include "hp/cache/lru_cache.hpp"
+
 #include "hp/benchmark/bench_case.hpp"
+#include "hp/cache/lru_cache.hpp"
+#include "hp/workload/workload.hpp"
 
-static void BM_LRU_Workload_Case(benchmark::State& state, const hp::bench::BenchCase& bc) {
-    std::vector<uint64_t> seq;;
-    seq.reserve(bc.total_ops);
-
+static hp::workload::WorkloadConfig ToWorkloadConfig(const hp::bench::BenchCase& bc) {
     hp::workload::WorkloadConfig cfg;
-    cfg.type = (bc.workload == hp::bench::WorkloadKind::Uniform)
-             ? hp::workload::WorkloadType::Uniform
-             : hp::workload::WorkloadType::Hotspot;
-    cfg.key_space = bc.key_space;
+    cfg.key_space = static_cast<uint64_t>(bc.key_space);
     cfg.seed = 42;
     cfg.hot_key_ratio = bc.hot_key_ratio;
     cfg.hot_access_ratio = bc.hot_access_ratio;
+    cfg.zipf_alpha = bc.zipf_alpha;
 
+    switch (bc.workload) {
+        case hp::bench::WorkloadKind::Uniform:
+            cfg.type = hp::workload::WorkloadType::Uniform;
+            break;
+        case hp::bench::WorkloadKind::Hotspot:
+            cfg.type = hp::workload::WorkloadType::Hotspot;
+            break;
+        case hp::bench::WorkloadKind::Zipf:
+            cfg.type = hp::workload::WorkloadType::Zipf;
+            break;  
+        default:
+            throw std::runtime_error("unknown workload kind");
+    }
+
+    return cfg;
+}
+
+static void BM_LRU_Workload_Case(benchmark::State& state, const hp::bench::BenchCase& bc) {
+    std::vector<uint64_t> seq;
+    seq.reserve(static_cast<size_t>(bc.total_ops));
+
+    hp::workload::WorkloadConfig cfg = ToWorkloadConfig(bc);
     hp::workload::WorkloadGenerator gen(cfg);
 
     for (int i = 0; i < bc.total_ops; ++i) {
@@ -26,14 +46,14 @@ static void BM_LRU_Workload_Case(benchmark::State& state, const hp::bench::Bench
     for (auto _ : state) {
         state.PauseTiming();
 
-        hp::cache::LRUCache<int, int> cache(bc.capacity);
+        hp::cache::LRUCache<uint64_t, uint64_t> cache(static_cast<size_t>(bc.capacity));
         int hits = 0;
         int misses = 0;
-        int value = 0;
+        uint64_t value = 0;
 
         state.ResumeTiming();
 
-        for (int key : seq) {
+        for (uint64_t key : seq) {
             if (cache.get(key, value)) {
                 ++hits;
             } else {
@@ -48,6 +68,10 @@ static void BM_LRU_Workload_Case(benchmark::State& state, const hp::bench::Bench
         state.counters["HitRate"] =
             benchmark::Counter(
                 static_cast<double>(hits) / static_cast<double>(hits + misses));
+
+        state.counters["MissRate"] =
+            benchmark::Counter(
+                static_cast<double>(misses) / static_cast<double>(hits + misses));
 
         state.counters["OpsPerSec"] =
             benchmark::Counter(
@@ -74,6 +98,10 @@ int main(int argc, char** argv) {
 
     for (const auto& bc : hp::bench::HotspotIntensitySweepCases()) {
         register_case("LRU_HotspotSweep/", bc);
+    }
+
+    for (const auto& bc : hp::bench::ZipfAlphaSweepCases()) {
+        register_case("LRU_ZipfSweep/", bc);
     }
 
     benchmark::Initialize(&argc, argv);

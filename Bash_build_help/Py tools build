@@ -1,0 +1,5 @@
+python3 tools/bench_json_to_md.py \
+  results/hotspot_intensity_sweep.json \
+  -o results/hotspot_intensity_sweep.md \
+  --title "Hotspot Intensity Sweep" \
+  --simplify-name
